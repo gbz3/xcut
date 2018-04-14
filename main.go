@@ -5,7 +5,7 @@ import (
   "fmt"
   "io/ioutil"
   "os"
-  "strings"
+  "regexp"
 
   "github.com/tealeg/xlsx"
 )
@@ -33,16 +33,21 @@ func main() {
   }
 //  fmt.Printf( "file opened.\n" )
 
-  for _, sheet := range book.Sheets {
+  for i, sheet := range book.Sheets {
     for j, row := range sheet.Rows {
+      if len( fk ) == 0 { fmt.Printf( "(%s):\t", sheet.Name ) }
       for k, cell := range row.Cells {
-        if strings.Contains( cell.String(), fk ) {
-          fmt.Printf( "\trow=%d cell=%d Text=[%s]\n", j, k, cell.String() )
+        if len( fk ) > 0 && regexp.MustCompile( fk ).MatchString( cell.String() ) {
+          fmt.Printf( "sheet=%d:(%s) row=%d cell=%d Text=[%s]\n", i, sheet.Name, j, k, cell.String() )
           if fa == false {
             os.Exit( 0 )
           }
+        } else if len( fk ) == 0 {
+          if k > 0 { fmt.Print( "\t" ) }
+          fmt.Print( cell.String() )
         }
       }
+      if len( fk ) == 0 { fmt.Print( "\n" ) }
     }
   }
 
