@@ -3,10 +3,11 @@ package main
 import (
   "flag"
   "fmt"
+  "io/ioutil"
   "os"
   "regexp"
 
-  "github.com/360EntSecGroup-Skylar/excelize"
+  "github.com/tealeg/xlsx"
 )
 
 var fs string
@@ -23,34 +24,37 @@ func main() {
   flag.Parse()
 
   // Excel ファイルを読み込む
-  book, err := excelize.OpenReader( os.Stdin )
+  b, err := ioutil.ReadAll( os.Stdin )
   if err != nil {
     panic( err )
   }
-//  fmt.Printf( "file opened.\n" )
+
+  book, err := xlsx.OpenBinary( b )
+  if err != nil {
+    panic( err )
+  }
 
   if len( fs ) == 0 {
-    sm := book.GetSheetMap()
-    for k, v := range sm {
-      fmt.Printf( "%d:\t%s\n", k, v )
+    for _, sheet := range book.Sheets {
+      fmt.Println( sheet.Name )
     }
     os.Exit( 0 )
   }
 
-  if book.GetSheetVisible( fs ) == false {
-    fmt.Print( "sheet not found.\n" )
+  if _, ok := book.Sheet[ fs ]; !ok {
+    fmt.Println( "sheet not found." )
     os.Exit( 1 )
   }
 
-  for i, row := range book.GetRows( fs ) {
-    for j, cell := range row {
-      if len( fk ) > 0 && regexp.MustCompile( fk ).MatchString( cell ) {
-        fmt.Printf( "row=%d cell=%d Text=[%s]\n", i, j, cell )
+  for i, row := range book.Sheet[ fs ].Rows {
+    for j, cell := range row.Cells {
+      if len( fk ) > 0 && regexp.MustCompile( fk ).MatchString( cell.String() ) {
+        fmt.Printf( "%s%d\tText=[%s]\n", xlsx.ColIndexToLetters( j ), i, cell.String() )
         if fa == false {
           os.Exit( 0 )
         }
       } else if len( fk ) == 0 {
-        fmt.Print( cell, "\t" )
+        fmt.Print( cell.String(), "\t" )
       }
     }
     if len( fk ) == 0 { fmt.Println() }
