@@ -3,17 +3,18 @@ package main
 import (
   "flag"
   "fmt"
-  "io/ioutil"
   "os"
   "regexp"
 
-  "github.com/tealeg/xlsx"
+  "github.com/360EntSecGroup-Skylar/excelize"
 )
 
+var fs string
 var fk string
 var fa bool
 
 func init() {
+  flag.StringVar( &fs, "s", "", "specified sheet name" )
   flag.StringVar( &fk, "k", "", "keyword for search" )
   flag.BoolVar( &fa, "a", false, "searching all" )
 }
@@ -22,33 +23,37 @@ func main() {
   flag.Parse()
 
   // Excel ファイルを読み込む
-  b, err := ioutil.ReadAll( os.Stdin )
-  if err != nil {
-    panic( err )
-  }
-
-  book, err := xlsx.OpenBinary( b )
+  book, err := excelize.OpenReader( os.Stdin )
   if err != nil {
     panic( err )
   }
 //  fmt.Printf( "file opened.\n" )
 
-  for i, sheet := range book.Sheets {
-    for j, row := range sheet.Rows {
-      if len( fk ) == 0 { fmt.Printf( "(%s):\t", sheet.Name ) }
-      for k, cell := range row.Cells {
-        if len( fk ) > 0 && regexp.MustCompile( fk ).MatchString( cell.String() ) {
-          fmt.Printf( "sheet=%d:(%s) row=%d cell=%d Text=[%s]\n", i, sheet.Name, j, k, cell.String() )
-          if fa == false {
-            os.Exit( 0 )
-          }
-        } else if len( fk ) == 0 {
-          if k > 0 { fmt.Print( "\t" ) }
-          fmt.Print( cell.String() )
-        }
-      }
-      if len( fk ) == 0 { fmt.Print( "\n" ) }
+  if len( fs ) == 0 {
+    sm := book.GetSheetMap()
+    for k, v := range sm {
+      fmt.Printf( "%d:\t%s\n", k, v )
     }
+    os.Exit( 0 )
+  }
+
+  if book.GetSheetVisible( fs ) == false {
+    fmt.Print( "sheet not found.\n" )
+    os.Exit( 1 )
+  }
+
+  for i, row := range book.GetRows( fs ) {
+    for j, cell := range row {
+      if len( fk ) > 0 && regexp.MustCompile( fk ).MatchString( cell ) {
+        fmt.Printf( "row=%d cell=%d Text=[%s]\n", i, j, cell )
+        if fa == false {
+          os.Exit( 0 )
+        }
+      } else if len( fk ) == 0 {
+        fmt.Print( cell, "\t" )
+      }
+    }
+    if len( fk ) == 0 { fmt.Println() }
   }
 
 }
