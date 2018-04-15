@@ -12,12 +12,14 @@ import (
 )
 
 var fs string
+var ff string
 var fc string
 var fk string
 var fa bool
 
 func init() {
   flag.StringVar( &fs, "s", "", "specified sheet name" )
+  flag.StringVar( &ff, "f", "\t", "field separator" )
   flag.StringVar( &fc, "c", "", "cut off data" )
   flag.StringVar( &fk, "k", "", "keyword for search" )
   flag.BoolVar( &fa, "a", false, "searching all" )
@@ -25,6 +27,10 @@ func init() {
 
 func main() {
   flag.Parse()
+  if _, err := strconv.Unquote( `"` + ff + `"` ); err != nil {
+    panic( err )
+  }
+  ff, _ = strconv.Unquote( `"` + ff + `"` )
 
   // Excel ファイルを読み込む
   b, err := ioutil.ReadAll( os.Stdin )
@@ -73,6 +79,7 @@ func main() {
     }
   }
 //fmt.Printf( "cmin=%d cmax=%d rmin=%d rmax=%d\n", cmin, cmax, rmin, rmax )
+//fmt.Printf( "[%s]\n", ff )
 
   // evaluate fk, fa
   for r, row := range sheet.Rows {
@@ -85,7 +92,7 @@ func main() {
           os.Exit( 0 )
         }
       } else if len( fk ) == 0 {
-        fmt.Print( cell.String(), "\t" )
+        fmt.Print( cell.String(), ff )
       }
     }
     if len( fk ) == 0 { fmt.Println() }
