@@ -25,6 +25,23 @@ func init() {
   flag.BoolVar( &fa, "a", false, "searching all" )
 }
 
+func open( fileName string ) ( *xlsx.File, error ) {
+  if fileName == "" {
+    b, err := ioutil.ReadAll( os.Stdin )
+    if err != nil {
+      panic( err )
+    }
+    return xlsx.OpenBinary( b )
+  }
+
+  _, err := os.Stat( fileName )
+  if err != nil {
+    fmt.Println( flag.Arg( 0 ) + " is not file." )
+    os.Exit( 1 )
+  }
+  return xlsx.OpenFile( flag.Arg( 0 ) )
+}
+
 func main() {
   flag.Parse()
   if _, err := strconv.Unquote( `"` + ff + `"` ); err != nil {
@@ -32,13 +49,12 @@ func main() {
   }
   ff, _ = strconv.Unquote( `"` + ff + `"` )
 
-  // Excel ファイルを読み込む
-  b, err := ioutil.ReadAll( os.Stdin )
-  if err != nil {
-    panic( err )
+  if 1 < flag.NArg() {
+    panic( "too many arguments." )
   }
 
-  book, err := xlsx.OpenBinary( b )
+  // Excel ファイルを読み込む
+  book, err := open( flag.Arg( 0 ) )
   if err != nil {
     panic( err )
   }
